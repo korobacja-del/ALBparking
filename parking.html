@@ -185,8 +185,11 @@ function updateSlot(id,val){
 
 async function loadData(){
   try{
-    let res=await fetch("http://localhost:3000/data");
-    let d=await res.json();
+    let d = {
+      s1: Math.round(Math.random()),
+      s2: Math.round(Math.random()),
+      s3: Math.round(Math.random())
+    };
 
     updateSlot("s1",d.s1);
     updateSlot("s2",d.s2);
