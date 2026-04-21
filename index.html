@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="sq">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Smart Parking</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet"/>
+
+<style>
+:root{
+  --bg:#0a0e1a; --panel:#0f1629; --border:#1e2d4a;
+  --accent:#00d4ff; --green:#00ff88; --red:#ff3355;
+  --yellow:#ffcc00; --text:#c8d8f0; --dim:#4a6080;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  background:var(--bg);
+  font-family:'Rajdhani',sans-serif;
+  color:var(--text);
+}
+
+/* HEADER */
+.header{text-align:center;margin:20px;}
+.header h1{
+  letter-spacing:3px;
+  color:var(--accent);
+}
+.live-dot{
+  width:6px;height:6px;border-radius:50%;
+  background:var(--green);display:inline-block;
+}
+
+/* SPOTS */
+.spots-row{display:flex;gap:10px;margin:20px;}
+.spot{
+  flex:1;
+  padding:20px;
+  border-radius:10px;
+  text-align:center;
+  cursor:pointer;
+  border:2px solid var(--border);
+}
+.spot.free{border-color:var(--green);}
+.spot.busy{border-color:var(--red);}
+
+.spot-lbl{margin-top:10px;font-weight:bold;}
+.spot.free .spot-lbl{color:var(--green);}
+.spot.busy .spot-lbl{color:var(--red);}
+
+/* GATE */
+.gate{margin:20px;text-align:center;}
+.gate-bar{
+  width:60px;height:10px;margin:auto;
+  background:var(--red);
+  transition:0.5s;
+}
+.gate-bar.open{
+  transform:rotate(-90deg);
+  background:var(--green);
+}
+
+/* LOG */
+.log{margin:20px;}
+.log div{margin-bottom:5px;font-size:14px;}
+
+.conn-bar{
+  margin:20px;
+  padding:10px;
+  border:1px solid var(--border);
+  cursor:pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+  <h1>Smart Parking</h1>
+  <p><span class="live-dot"></span> LIVE</p>
+</div>
+
+<div class="spots-row">
+  <div class="spot free" id="spot1" onclick="toggleSpot(1)">
+    <div>VENDI 01</div>
+    <div class="spot-lbl" id="lbl1">I Lirë</div>
+  </div>
+
+  <div class="spot free" id="spot2" onclick="toggleSpot(2)">
+    <div>VENDI 02</div>
+    <div class="spot-lbl" id="lbl2">I Lirë</div>
+  </div>
+
+  <div class="spot free" id="spot3" onclick="toggleSpot(3)">
+    <div>VENDI 03</div>
+    <div class="spot-lbl" id="lbl3">I Lirë</div>
+  </div>
+</div>
+
+<div class="gate">
+  <div id="gBar" class="gate-bar"></div>
+  <button onclick="setGate(true)">Hap Portën</button>
+</div>
+
+<div class="log" id="logList"></div>
+
+<div class="conn-bar" onclick="connectSerial()">
+  Kliko për tu lidhur me Arduino
+</div>
+
+<script>
+const spots = {1:false,2:false,3:false};
+
+function toggleSpot(n){
+  spots[n]=!spots[n];
+  refreshSpot(n);
+  addLog(spots[n]?"Zënë":"Lirë","Vendi "+n);
+}
+
+function refreshSpot(n){
+  const el=document.getElementById("spot"+n);
+  const lbl=document.getElementById("lbl"+n);
+
+  if(spots[n]){
+    el.className="spot busy";
+    lbl.textContent="E Zënë";
+  }else{
+    el.className="spot free";
+    lbl.textContent="I Lirë";
+  }
+}
+
+function setGate(open){
+  const bar=document.getElementById("gBar");
+  if(open){
+    bar.classList.add("open");
+    addLog("Porta","Hapur");
+    setTimeout(()=>setGate(false),3000);
+  }else{
+    bar.classList.remove("open");
+  }
+}
+
+function addLog(type,msg){
+  const log=document.getElementById("logList");
+  const div=document.createElement("div");
+  div.textContent=new Date().toLocaleTimeString()+" - "+type+" - "+msg;
+  log.prepend(div);
+}
+
+async function connectSerial(){
+  if(!("serial" in navigator)){
+    alert("Përdor Chrome");
+    return;
+  }
+
+  try{
+    const port=await navigator.serial.requestPort();
+    await port.open({baudRate:9600});
+
+    const decoder=new TextDecoderStream();
+    port.readable.pipeTo(decoder.writable);
+    const reader=decoder.readable.getReader();
+
+    while(true){
+      const {value,done}=await reader.read();
+      if(done) break;
+
+      console.log(value);
+    }
+
+  }catch(e){
+    alert("Gabim lidhje");
+  }
+}
+</script>
+
+</body>
+</html>
